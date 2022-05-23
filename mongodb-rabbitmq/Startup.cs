@@ -36,10 +36,6 @@ namespace CAP
                     opt.Password = "guest";
                     opt.UserName = "guest";
                     opt.VirtualHost = "/";
-                    opt.CustomHeaders = h => new List<KeyValuePair<string, string>>
-                    {
-                        new KeyValuePair<string, string>("merchant", "loja-virtual")
-                    };
                 });
 
                 x.UseMongoDB(opt =>

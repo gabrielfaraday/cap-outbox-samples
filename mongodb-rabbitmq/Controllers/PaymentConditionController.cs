@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using DotNetCore.CAP;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -31,10 +30,10 @@ namespace CAP.Controllers
 
                 collection.InsertOne(session, newPaymentCondition);
 
-                // var headers = new Dictionary<string, string>();
-                // headers.Add("merchant", "loja-virutal");
+                var headers = new Dictionary<string, string>();
+                headers.Add("merchant", "loja-virtual");
 
-                _capBus.Publish("myapp.paymentCondition.created", newPaymentCondition);
+                _capBus.Publish("myapp.paymentCondition.created", newPaymentCondition, headers);
 
                 session.CommitTransaction();
             }
@@ -53,10 +52,10 @@ namespace CAP.Controllers
 
                 collection.ReplaceOne(session, filter, paymentCondition);
 
-                // var headers = new Dictionary<string, string>();
-                // headers.Add("merchant", "loja-virutal");
+                var headers = new Dictionary<string, string>();
+                headers.Add("merchant", "loja-virtual");
 
-                _capBus.Publish("myapp.paymentCondition.updated", paymentCondition);
+                _capBus.Publish("myapp.paymentCondition.updated", paymentCondition, headers);
 
                 session.CommitTransaction();
             }
