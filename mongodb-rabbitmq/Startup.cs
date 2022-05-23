@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 
-namespace CAP
+namespace mongodb_rabbitmq
 {
     public class Startup
     {
@@ -26,6 +26,11 @@ namespace CAP
             });
 
             services.AddSingleton<MongoDB>();
+
+            services.AddTransient<IConsumer<PaymentConditionCreated>, ConsumerPaymentConditionCreated>();
+            services.AddTransient<IConsumer<PaymentCondition>, ConsumerPaymentCondition>();
+
+            services.AddScoped<IMessageTracker, MessageTracker>();
 
             services.AddCap(x =>
             {

@@ -1,7 +1,7 @@
 using System;
 using MongoDB.Driver;
 
-namespace CAP
+namespace mongodb_rabbitmq
 {
     public class MongoDB
     {

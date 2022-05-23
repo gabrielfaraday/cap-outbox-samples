@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 
-namespace CAP.Controllers
+namespace mongodb_rabbitmq.Controllers
 {
     [ApiController]
     [Route("[controller]")]
@@ -14,10 +14,10 @@ namespace CAP.Controllers
         private readonly MongoDB _mongo;
         private readonly ICapPublisher _capBus;
 
-        public PaymentConditionController(ILogger<PaymentConditionController> logger, MongoDB db, ICapPublisher capBus)
+        public PaymentConditionController(ILogger<PaymentConditionController> logger, MongoDB mongo, ICapPublisher capBus)
         {
             _logger = logger;
-            _mongo = db;
+            _mongo = mongo;
             _capBus = capBus;
         }
 

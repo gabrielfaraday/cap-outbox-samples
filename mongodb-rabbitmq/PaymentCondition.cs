@@ -1,6 +1,6 @@
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace CAP
+namespace mongodb_rabbitmq
 {
     [BsonIgnoreExtraElements]
     public class PaymentCondition

@@ -19,32 +19,6 @@ http://localhost:15672/
     Password: guest
 ```
 
-Create a new exchange in rabbit:
-
-    - Name: cap.default.router
-    - Type: topic
-
-Create a new queue in rabbit:
-
-    - Type: Classic
-    - Name: myapp2.paymentCondition.created
-
-And bind it to a exchange:
-
-    - From exchange: cap.default.router
-    - Routing key: myapp.paymentCondition.created
-
-Create a new queue in rabbit:
-
-    - Type: Classic
-    - Name: myapp3.paymentCondition
-
-And bind it to a exchange:
-
-    - From exchange: cap.default.router
-    - Routing key: myapp.paymentCondition.*
-
-
 # Test it
 
 In VsCode (or Visual Studio) press F5
