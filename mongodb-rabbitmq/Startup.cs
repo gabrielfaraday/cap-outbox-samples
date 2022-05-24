@@ -34,6 +34,8 @@ namespace mongodb_rabbitmq
 
             services.AddCap(x =>
             {
+                x.UseDashboard();
+
                 x.UseRabbitMQ(opt =>
                 {
                     opt.Port = 5672;
