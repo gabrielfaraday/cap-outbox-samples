@@ -7,6 +7,11 @@ namespace mongodb_rabbitmq
     {
         public string Code { get; set; }
         public string Name { get; set; }
-        public int[] Deadline { get; set; }
+    }
+
+    public class PaymentConditionCreatedMongo : PaymentCondition { }
+    public class PaymentConditionCreatedEF : PaymentCondition
+    {
+        public long Id { get; set; }
     }
 }

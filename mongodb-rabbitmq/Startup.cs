@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using MongoDB.Driver;
-using mongodb_rabbitmq.Capim.MongoDB;
+using mongodb_rabbitmq.Consumers;
 
 namespace mongodb_rabbitmq
 {
@@ -26,16 +27,25 @@ namespace mongodb_rabbitmq
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CAP", Version = "v1" });
             });
 
+            //MONGO
             var mongoClient = new MongoClient("mongodb://localhost:27017/?authSource=admin&readPreference=primary&directConnection=true&ssl=false");
             services.AddSingleton<MongoClient>(mongoClient);
 
-            services.AddTransient<IConsumer<PaymentConditionCreated>, ConsumerPaymentConditionCreated>();
-            // services.AddTransient<IConsumer<PaymentCondition>, ConsumerPaymentCondition>();
+            services.AddTransient<IConsumer<PaymentConditionCreatedMongo>, ConsumerMongo>();
+            services.AddScoped<Capim.MongoDB.IMessageProcessor<PaymentConditionCreatedMongo>, Capim.MongoDB.MessageProcessor<PaymentConditionCreatedMongo>>();
 
-            services.AddScoped<IMessageProcessor<PaymentConditionCreated>, MessageProcessor<PaymentConditionCreated>>();
+            //EF
+            services.AddDbContext<ExampleDbContext>(options =>
+                options.UseSqlServer("Server=localhost,5100;Initial Catalog=CAP;User ID=sa;Password=Password1;"));
+
+            services.AddTransient<IConsumer<PaymentConditionCreatedEF>, ConsumerEF>();
+            services.AddScoped<Capim.EF.IMessageProcessor<PaymentConditionCreatedEF, ExampleDbContext>, Capim.EF.MessageProcessor<PaymentConditionCreatedEF, ExampleDbContext>>();
+
 
             services.AddCap(x =>
             {
+                x.UseEntityFramework<ExampleDbContext>();
+
                 x.UseDashboard();
 
                 x.UseRabbitMQ(opt =>

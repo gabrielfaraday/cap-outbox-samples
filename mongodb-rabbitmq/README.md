@@ -1,11 +1,14 @@
 # Preparing the local env
 
 ```shell
-    # Create instances of rabbitmq and mongodb and initialize the mongodb cluster
+    # Create instances of rabbitmq, sql server and mongodb and initialize the mongodb cluster
     docker compose up -d
 
     # check if the cluster is up and ok
     docker exec -it mongo1 mongosh --eval "rs.status()"
+
+    # create initial tables in sql server
+    dotnet ef database update
 ```
 
 You can connnect to mongodb using this conn string:
