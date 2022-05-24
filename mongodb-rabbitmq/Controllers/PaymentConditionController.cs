@@ -11,10 +11,10 @@ namespace mongodb_rabbitmq.Controllers
     public class PaymentConditionController : ControllerBase
     {
         private readonly ILogger<PaymentConditionController> _logger;
-        private readonly MongoDB _mongo;
+        private readonly MongoClient _mongo;
         private readonly ICapPublisher _capBus;
 
-        public PaymentConditionController(ILogger<PaymentConditionController> logger, MongoDB mongo, ICapPublisher capBus)
+        public PaymentConditionController(ILogger<PaymentConditionController> logger, MongoClient mongo, ICapPublisher capBus)
         {
             _logger = logger;
             _mongo = mongo;
@@ -24,9 +24,9 @@ namespace mongodb_rabbitmq.Controllers
         [HttpPost]
         public IActionResult Post(PaymentCondition newPaymentCondition)
         {
-            using (var session = _mongo.Client.StartTransaction(_capBus, autoCommit: false))
+            using (var session = _mongo.StartTransaction(_capBus, autoCommit: false))
             {
-                var collection = _mongo.DB.GetCollection<PaymentCondition>("paymentConditions");
+                var collection = _mongo.GetDatabase("testCap").GetCollection<PaymentCondition>("paymentConditions");
 
                 collection.InsertOne(session, newPaymentCondition);
 
@@ -44,9 +44,9 @@ namespace mongodb_rabbitmq.Controllers
         [HttpPut("{code}")]
         public IActionResult Put(PaymentCondition paymentCondition, string code)
         {
-            using (var session = _mongo.Client.StartTransaction(_capBus, autoCommit: false))
+            using (var session = _mongo.StartTransaction(_capBus, autoCommit: false))
             {
-                var collection = _mongo.DB.GetCollection<PaymentCondition>("paymentConditions");
+                var collection = _mongo.GetDatabase("testCap").GetCollection<PaymentCondition>("paymentConditions");
 
                 var filter = Builders<PaymentCondition>.Filter.Eq(s => s.Code, code);
 

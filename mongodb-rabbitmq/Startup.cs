@@ -1,10 +1,11 @@
-using System.Collections.Generic;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using MongoDB.Driver;
+using mongodb_rabbitmq.Capim.MongoDB;
 
 namespace mongodb_rabbitmq
 {
@@ -25,12 +26,13 @@ namespace mongodb_rabbitmq
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CAP", Version = "v1" });
             });
 
-            services.AddSingleton<MongoDB>();
+            var mongoClient = new MongoClient("mongodb://localhost:27017/?authSource=admin&readPreference=primary&directConnection=true&ssl=false");
+            services.AddSingleton<MongoClient>(mongoClient);
 
             services.AddTransient<IConsumer<PaymentConditionCreated>, ConsumerPaymentConditionCreated>();
-            services.AddTransient<IConsumer<PaymentCondition>, ConsumerPaymentCondition>();
+            // services.AddTransient<IConsumer<PaymentCondition>, ConsumerPaymentCondition>();
 
-            services.AddScoped<IMessageTracker, MessageTracker>();
+            services.AddScoped<IMessageProcessor<PaymentConditionCreated>, MessageProcessor<PaymentConditionCreated>>();
 
             services.AddCap(x =>
             {

@@ -1,6 +1,9 @@
-using System;
+using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using DotNetCore.CAP;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
+using mongodb_rabbitmq.Capim.MongoDB;
 
 namespace mongodb_rabbitmq
 {
@@ -8,59 +11,36 @@ namespace mongodb_rabbitmq
 
     public interface IConsumer<T> where T : class
     {
-        void ConsumeMessage(T message, [FromCap]CapHeader header);
+        Task ConsumeMessage(T message, [FromCap] CapHeader header);
     }
 
     public class ConsumerPaymentConditionCreated : IConsumer<PaymentConditionCreated>, ICapSubscribe
     {
         private readonly ILogger<ConsumerPaymentConditionCreated> _logger;
-        private readonly IMessageTracker _tracker;
+        private readonly IMessageProcessor<PaymentConditionCreated> _tracker;
+        private readonly MongoClient _mongo;
 
-        public ConsumerPaymentConditionCreated(ILogger<ConsumerPaymentConditionCreated> logger, IMessageTracker tracker)
+        public ConsumerPaymentConditionCreated(ILogger<ConsumerPaymentConditionCreated> logger, IMessageProcessor<PaymentConditionCreated> tracker, MongoClient mongo)
         {
             _logger = logger;
             _tracker = tracker;
+            _mongo = mongo;
         }
 
         [CapSubscribe("myapp.paymentCondition.created", Group = "myapp2.paymentCondition.created")]
-        public void ConsumeMessage(PaymentConditionCreated message, [FromCap]CapHeader header)
+        public async Task ConsumeMessage(PaymentConditionCreated message, [FromCap] CapHeader header)
         {
-            var id = Convert.ToInt64(header["cap-msg-id"]);
-            if (_tracker.HasProcessed(id))
+            if (!await _tracker.Process(header["cap-msg-id"], header, message, ProcessMessage))
             {
                 _logger.LogWarning($"[ConsumerPaymentConditionCreated] Message {header["cap-msg-id"]} already processed");
                 return;
             }
+        }
 
-            _logger.LogInformation($"[ConsumerPaymentConditionCreated] {message.Code} - {message.Name} - {header["merchant"]} - {header["cap-msg-id"]} - {header["cap-msg-name"]}");
-            _tracker.MarkAsProcessed(id);
+        private async Task ProcessMessage(IClientSessionHandle session, ReadOnlyDictionary<string, string> header, PaymentCondition message)
+        {
+            var collection = _mongo.GetDatabase("testCap").GetCollection<PaymentCondition>("paymentConditions2");
+            await collection.InsertOneAsync(session, message);
         }
     }
-
-    public class ConsumerPaymentCondition : IConsumer<PaymentCondition>, ICapSubscribe
-    {
-        private readonly ILogger<ConsumerPaymentCondition> _logger;
-        private readonly IMessageTracker _tracker;
-
-        public ConsumerPaymentCondition(ILogger<ConsumerPaymentCondition> logger, IMessageTracker tracker)
-        {
-            _logger = logger;
-            _tracker = tracker;
-        }
-
-        [CapSubscribe("myapp.paymentCondition.updated", Group = "myapp2.paymentCondition.updated")]
-        public void ConsumeMessage(PaymentCondition message, [FromCap]CapHeader header)
-        {
-            var id = Convert.ToInt64(header["cap-msg-id"]);
-            if (_tracker.HasProcessed(id))
-            {
-                _logger.LogWarning($"[ConsumerPaymentCondition] Message {header["cap-msg-id"]} already processed");
-                return;
-            }
-
-            _logger.LogInformation($"[ConsumerPaymentCondition] {message.Code} - {message.Name} - {header["merchant"]} - {header["cap-msg-id"]} - {header["cap-msg-name"]}");
-            _tracker.MarkAsProcessed(id);
-        }
-    }
-
 }
