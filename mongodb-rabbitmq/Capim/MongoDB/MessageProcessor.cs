@@ -1,80 +1,63 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
+using Capim.MongoDB.Setup;
 using MongoDB.Driver;
 
-namespace mongodb_rabbitmq.Capim.MongoDB
+namespace Capim.MongoDB
 {
-    public interface IMessageProcessor<T>
-    {
-        Task<bool> Process(string id, ReadOnlyDictionary<string, string> header, T message, Func<IClientSessionHandle, ReadOnlyDictionary<string, string>, T, Task> function);
-    }
-
-
-    public class MessageProcessor<T> : IMessageProcessor<T>
+    public class MessageProcessor<MessageType> : IMessageProcessor<MessageType>
     {
         private readonly MongoClient _mongo;
-        IClientSessionHandle _session;
-        string _id;
+        private readonly CapimMongoDBOptions _options;
 
-        public MessageProcessor(MongoClient mongo)
+        public MessageProcessor(MongoClient mongo, CapimMongoDBOptions options)
         {
             _mongo = mongo;
+            _options = options;
         }
 
-        public async Task<bool> Process(string id, ReadOnlyDictionary<string, string> header, T message, Func<IClientSessionHandle, ReadOnlyDictionary<string, string>, T, Task> function)
+        public async Task<bool> Process(
+            string messageId,
+            string messageType,
+            ReadOnlyDictionary<string, string> messageHeaders,
+            MessageType messagePayload,
+            Func<IClientSessionHandle, ReadOnlyDictionary<string, string>, MessageType, Task> processingFunction,
+            bool autoCommit = false)
         {
-            if (HasProcessed(id))
+            if (HasProcessed(messageId, messageType))
                 return false;
 
-            var session = Initialize(id);
-
-            try
+            using (var session = _mongo.StartSession())
             {
-                await function(session, header, message);
-                
-                SaveChanges();
+                session.StartTransaction();
+
+                MarkAsProcessed(session, messageId, messageType);
+
+                await processingFunction(session, messageHeaders, messagePayload);
+
+                if (autoCommit)
+                    session.CommitTransaction();
+
                 return true;
             }
-            catch
-            {
-                Rollback();
-                throw;
-            }
         }
 
-        private bool HasProcessed(string id)
+        private bool HasProcessed(string messageId, string messageType)
         {
-            var collection = _mongo.GetDatabase("testCap").GetCollection<MessageTracker>("cap.processed");
-            return collection.CountDocuments(Builders<MessageTracker>.Filter.Eq(x => x.Id, id)) > 0;
+            var collection = _mongo.GetDatabase(_options.MongoDatabaseName).GetCollection<MessageTracker>(_options.MongoCollectionName);
+
+            return collection
+                .AsQueryable()
+                .Where(x => x.Id == messageId && x.Type == messageType)
+                .Count() > 0;
         }
 
-        private IClientSessionHandle Initialize(string id)
+        private void MarkAsProcessed(IClientSessionHandle session, string messageId, string messageType)
         {
-            _id = id;
-            _session = _mongo.StartSession();
-            _session.StartTransaction();
-            return _session;
-        }
-
-        private void MarkAsProcessed(IClientSessionHandle session, string id)
-        {
-            var collection = _mongo.GetDatabase("testCap").GetCollection<MessageTracker>("cap.processed");
-            collection.InsertOne(session, new MessageTracker(id));
-        }
-
-        private void SaveChanges()
-        {
-            MarkAsProcessed(_session, _id);
-            _session.CommitTransaction();
-            _session.Dispose();
-        }
-
-        private void Rollback()
-        {
-            _session.AbortTransaction();
-            _session.Dispose();
+            var collection = _mongo.GetDatabase(_options.MongoDatabaseName).GetCollection<MessageTracker>(_options.MongoCollectionName);
+            collection.InsertOne(session, new MessageTracker(messageId, messageType));
         }
     }
-
 }

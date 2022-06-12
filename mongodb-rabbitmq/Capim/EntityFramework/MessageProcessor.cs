@@ -5,52 +5,44 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 
-namespace mongodb_rabbitmq.Capim.EF
+namespace Capim.EntityFramework
 {
-    public interface IMessageProcessor<T, C> where C : DbContext
+    public class MessageProcessor<MessageType, ContextType> : IMessageProcessor<MessageType, ContextType> where ContextType : DbContext
     {
-        Task<bool> Process(string id, ReadOnlyDictionary<string, string> header, T message, Func<C, ReadOnlyDictionary<string, string>, T, Task> function);
-    }
-
-    public class MessageProcessor<T, C> : IMessageProcessor<T, C> where C : DbContext
-    {
-        C _context;
+        ContextType _context;
         DbSet<MessageTracker> _messages;
-        string _id;
 
-        public MessageProcessor(C context)
+        public MessageProcessor(ContextType context)
         {
             _context = context;
             _messages = context.Set<MessageTracker>();
         }
 
-        public async Task<bool> Process(string id, ReadOnlyDictionary<string, string> header, T message, Func<C, ReadOnlyDictionary<string, string>, T, Task> function)
+        public async Task<bool> Process(
+            string messageId,
+            string messageType,
+            ReadOnlyDictionary<string, string> messageHeaders,
+            MessageType messagePayload,
+            Func<ContextType, ReadOnlyDictionary<string, string>, MessageType, Task> processingFunction,
+            bool autoCommit = false)
         {
-            if (HasProcessed(id))
+            if (HasProcessed(messageId, messageType))
                 return false;
 
-            _id = id;
+            MarkAsProcessed(messageId, messageType);
 
-            await function(_context, header, message);
+            await processingFunction(_context, messageHeaders, messagePayload);
 
-            SaveChanges();
+            if (autoCommit)
+                _context.SaveChanges();
+            
             return true;
         }
 
-        private bool HasProcessed(string id)
-        {
-            return _messages.Where(x => x.Id == id).Count() > 0;
-        }
+        private bool HasProcessed(string messageId, string messageType)
+            => _messages.Where(x => x.Id == messageId && x.Type == messageType).Count() > 0;
 
-        private void MarkAsProcessed(string id)
-        {
-            _messages.Add(new MessageTracker(id));
-        }
-
-        private void SaveChanges()
-        {
-            MarkAsProcessed(_id);
-            _context.SaveChanges();
-        }
+        private void MarkAsProcessed(string messageId, string messageType)
+            => _messages.Add(new MessageTracker(messageId, messageType));
     }
 }

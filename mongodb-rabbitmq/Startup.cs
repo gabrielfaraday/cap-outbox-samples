@@ -1,3 +1,5 @@
+using Capim.EntityFramework.Setup;
+using Capim.MongoDB.Setup;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -31,17 +33,27 @@ namespace mongodb_rabbitmq
             var mongoClient = new MongoClient("mongodb://localhost:27017/?authSource=admin&readPreference=primary&directConnection=true&ssl=false");
             services.AddSingleton<MongoClient>(mongoClient);
 
+            services.AddCapimMongoDB(x =>
+            {
+                x.MongoDatabaseName  = "testCap";
+                //x.MongoCollectionName = "message-tracker";
+                x.AddMessageProcessor<PaymentConditionCreatedMongo>();
+            });
+
             services.AddTransient<IConsumer<PaymentConditionCreatedMongo>, ConsumerMongo>();
-            services.AddScoped<Capim.MongoDB.IMessageProcessor<PaymentConditionCreatedMongo>, Capim.MongoDB.MessageProcessor<PaymentConditionCreatedMongo>>();
 
             //EF
             services.AddDbContext<ExampleDbContext>(options =>
                 options.UseSqlServer("Server=localhost,5100;Initial Catalog=CAP;User ID=sa;Password=Password1;"));
 
+            services.AddCapimEntityFramework(x =>
+            {
+                x.AddMessageProcessor<PaymentConditionCreatedEF, ExampleDbContext>();
+            });
+
             services.AddTransient<IConsumer<PaymentConditionCreatedEF>, ConsumerEF>();
-            services.AddScoped<Capim.EF.IMessageProcessor<PaymentConditionCreatedEF, ExampleDbContext>, Capim.EF.MessageProcessor<PaymentConditionCreatedEF, ExampleDbContext>>();
 
-
+            //CAP
             services.AddCap(x =>
             {
                 x.UseEntityFramework<ExampleDbContext>();
@@ -54,7 +66,7 @@ namespace mongodb_rabbitmq
                     opt.HostName = "localhost";
                     opt.Password = "guest";
                     opt.UserName = "guest";
-                    opt.VirtualHost = "/";
+                    opt.VirtualHost = "/"; 
                 });
 
                 x.UseMongoDB(opt =>

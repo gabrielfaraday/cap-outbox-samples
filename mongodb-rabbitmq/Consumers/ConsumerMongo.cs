@@ -1,9 +1,9 @@
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using Capim.MongoDB;
 using DotNetCore.CAP;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
-using mongodb_rabbitmq.Capim.MongoDB;
 
 namespace mongodb_rabbitmq.Consumers
 {
@@ -25,8 +25,11 @@ namespace mongodb_rabbitmq.Consumers
 
         [CapSubscribe("myapp.paymentCondition.created", Group = "mongo.paymentCondition.created")]
         public async Task ConsumeMessage(PaymentConditionCreatedMongo message, [FromCap] CapHeader header)
-        {
-            if (!await _trackerMongo.Process(header["cap-msg-id"], header, message, ProcessMessage))
+        {  
+            //TODO
+
+
+            if (!await _trackerMongo.Process(header["cap-msg-id"], header["cap-msg-type"], header, message, ProcessMessage, autoCommit: false))
             {
                 _logger.LogWarning($"[ConsumerMongo] Message {header["cap-msg-id"]} already processed");
                 return;
@@ -35,7 +38,7 @@ namespace mongodb_rabbitmq.Consumers
 
         private async Task ProcessMessage(IClientSessionHandle session, ReadOnlyDictionary<string, string> header, PaymentCondition message)
         {
-            var collection = _mongo.GetDatabase("testCap").GetCollection<PaymentCondition>("paymentConditions2");
+            var collection = _mongo.GetDatabase("testCap").GetCollection<PaymentCondition>("paymentConditions");
             await collection.InsertOneAsync(session, message);
         }
     }

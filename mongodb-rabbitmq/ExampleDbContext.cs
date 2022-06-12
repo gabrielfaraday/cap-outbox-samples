@@ -1,5 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using mongodb_rabbitmq.Capim.EF;
+﻿using Capim.EntityFramework;
+using Microsoft.EntityFrameworkCore;
 
 namespace mongodb_rabbitmq
 {
@@ -15,7 +15,7 @@ namespace mongodb_rabbitmq
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.MapMessageTracker();
+            modelBuilder.MapMessageTracker("MyTracker");
             MapPaymentCondition(modelBuilder);
         }
 
