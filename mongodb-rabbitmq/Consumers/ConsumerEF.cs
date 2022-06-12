@@ -22,7 +22,7 @@ namespace mongodb_rabbitmq.Consumers
         [CapSubscribe("myapp.paymentCondition.created", Group = "ef.paymentCondition.created")]
         public async Task ConsumeMessage(PaymentConditionCreatedEF message, [FromCap] CapHeader header)
         {
-            if (!await _trackerEF.Process(header["cap-msg-id"], header["cap-msg-type"], header, message, ProcessMessage))
+            if (!await _trackerEF.Process(header["cap-msg-id"], header["cap-msg-type"], header, message, ProcessMessage, autoCommit: true))
             {
                 _logger.LogWarning($"[ConsumerEF] Message {header["cap-msg-id"]} already processed");
                 return;

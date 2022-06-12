@@ -8,6 +8,7 @@
     docker exec -it mongo1 mongosh --eval "rs.status()"
 
     # create initial tables in sql server
+    dotnet ef migrations add Initial
     dotnet ef database update
 ```
 
