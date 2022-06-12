@@ -29,7 +29,7 @@ namespace mongodb_rabbitmq.Consumers
             }
         }
 
-        private async Task ProcessMessage(ExampleDbContext context, ReadOnlyDictionary<string, string> header, PaymentCondition message)
+        private async Task ProcessMessage(ExampleDbContext context, ReadOnlyDictionary<string, string> header, PaymentConditionCreatedEF message)
         {
             await context.AddAsync(message);
         }

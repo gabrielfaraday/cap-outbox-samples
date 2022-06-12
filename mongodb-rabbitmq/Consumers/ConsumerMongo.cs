@@ -33,9 +33,10 @@ namespace mongodb_rabbitmq.Consumers
             }
         }
 
-        private async Task ProcessMessage(IClientSessionHandle session, ReadOnlyDictionary<string, string> header, PaymentCondition message)
+        private async Task ProcessMessage(IClientSessionHandle session, ReadOnlyDictionary<string, string> header, PaymentConditionCreatedMongo message)
         {
-            var collection = _mongo.GetDatabase("testCap").GetCollection<PaymentCondition>("paymentConditions");
+            var collection = _mongo.GetDatabase("testCap").GetCollection<PaymentConditionCreatedMongo>("paymentConditions");
+            message.Name += " - consumer";
             await collection.InsertOneAsync(session, message);
         }
     }

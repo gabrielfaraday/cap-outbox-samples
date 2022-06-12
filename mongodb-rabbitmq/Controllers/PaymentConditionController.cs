@@ -22,11 +22,13 @@ namespace mongodb_rabbitmq.Controllers
         }
 
         [HttpPost]
-        public IActionResult Post(PaymentCondition newPaymentCondition)
+        public IActionResult Post(PaymentConditionCreatedMongo newPaymentCondition)
         {
             using (var session = _mongo.StartTransaction(_capBus, autoCommit: false))
             {
-                var collection = _mongo.GetDatabase("testCap").GetCollection<PaymentCondition>("paymentConditions");
+                var collection = _mongo.GetDatabase("testCap").GetCollection<PaymentConditionCreatedMongo>("paymentConditions");
+
+                newPaymentCondition.Name += " - controller";
 
                 collection.InsertOne(session, newPaymentCondition);
 
@@ -42,13 +44,13 @@ namespace mongodb_rabbitmq.Controllers
         }
 
         [HttpPut("{code}")]
-        public IActionResult Put(PaymentCondition paymentCondition, string code)
+        public IActionResult Put(PaymentConditionCreatedMongo paymentCondition, string code)
         {
             using (var session = _mongo.StartTransaction(_capBus, autoCommit: false))
             {
-                var collection = _mongo.GetDatabase("testCap").GetCollection<PaymentCondition>("paymentConditions");
+                var collection = _mongo.GetDatabase("testCap").GetCollection<PaymentConditionCreatedMongo>("paymentConditions");
 
-                var filter = Builders<PaymentCondition>.Filter.Eq(s => s.Code, code);
+                var filter = Builders<PaymentConditionCreatedMongo>.Filter.Eq(s => s.Code, code);
 
                 collection.ReplaceOne(session, filter, paymentCondition);
 
